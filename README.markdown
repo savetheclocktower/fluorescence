@@ -27,7 +27,7 @@ A few sample syntaxes are included. Defining a syntax works like this:
     
 Here's what we just did:
 
-  * We defined a rule named `module`. That rule will search for text according to the regular expression specified by `pattern`. It will then replace that text with `replacement`, substituting `#{1}` with capture #1, `#{2}` with capture #2, et cetera. In the replacement string, `#{0}` refers to the name of the rule (`method`), in this case.
+  * We defined a rule named `module`. That rule will search for text according to the regular expression specified by `pattern`. It will then replace that text with `replacement`, substituting `#{1}` with capture #1, `#{2}` with capture #2, et cetera. In the replacement string, `#{0}` refers to the name of the rule (`module`, in this case).
   * We defined another rule named `keyword`. This rule does not have a replacement, only a pattern, so Fluorescence will use the default pattern: placing the entire match inside a `span` tag with a class name equal to the name of the rule. In this case: `<span class='keyword'>end</span>`.
   
 ### Write some CSS for the syntax
@@ -53,10 +53,8 @@ And so on.
 
 To tell Fluorescence to highlight a block of code, give its `code` element a class name equal to the name of the syntax you've defined. Above, we defined a syntax called `ruby`, so HTML that looks like this:
 
-
     <pre><code class="ruby">module Foo
     end</code></pre>
-    
     
 will get transformed into this:
 
@@ -75,7 +73,7 @@ Fluorescence performs some voodoo to get all this to work properly in IE — whi
       Fluorescence.TAB_SIZE = 4;
     </script>
 
-Keep in mind, though, that most browsers have other ideas about how wide a tab should be. Safari treats a tab as `8` spaces. That's enough to make me want to kill someone. It doesn't end up affecting me, though, because I write HTML with "soft" tabs (literal spaces instead of tabs). If you don't do the same, I'd recommend you selectively convert tabs to spaces inside your code blocks before you publish your HTML.
+Keep in mind, though, that most browsers have other ideas about how wide a tab should be. Safari treats a tab as _eight spaces_. That's enough to make me want to kill someone. It doesn't end up affecting me, though, because I write HTML with "soft" tabs (literal spaces instead of tabs). If you don't do the same, I'd recommend you selectively convert tabs to spaces inside your code blocks before you publish your HTML.
 
 ## About
 
