@@ -1,0 +1,61 @@
+code .comment {
+  color: #767676;
+}
+
+code .string {
+	color: #6f0;
+}
+
+code .keywords, 
+code .control {
+	color: #cc922b;
+}
+
+code .number,
+code .constant {
+  color: #7CB893;
+}
+
+code .dom {
+  color: #53D7FE;
+}
+
+code .global {
+	color: #7cb893;
+}
+
+code .function,
+code .fun,
+code .fun2, 
+code .entity {
+  color: #fc0;
+}
+
+code .parameter {
+  font-style: italic;
+}
+
+code .brackets {
+	color: #fff;
+}
+
+code .property {
+  color: #f60;
+}
+
+code .variable {
+  color: #5ddbff;
+}
+
+code .regexp {
+  color: #44b4cc;
+}
+
+code .shell-command {
+  background-color: #cc3;
+  color: #000;
+}
+
+code .tag {
+  color: #f60;
+}
