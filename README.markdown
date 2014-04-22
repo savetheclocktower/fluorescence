@@ -30,7 +30,7 @@ Fluorescence.addLanguage('ruby', {
 Here's what we just did:
 
   * We defined a rule named `module`. That rule will search for text according to the regular expression specified by `pattern`. It will then replace that text with `replacement`, substituting `#{1}` with capture #1, `#{2}` with capture #2, et cetera. In the replacement string, `#{0}` refers to the name of the rule (`module`, in this case).
-  * We defined another rule named `keyword`. This rule does not have a replacement, only a pattern, so Fluorescence will use the default pattern: placing the entire match inside a `span` tag with a class name equal to the name of the rule. In this case: `<span class='keyword'>end</span>`.
+  * We defined another rule named `keyword`. This rule does not have a replacement, only a pattern, so Fluorescence will use the default replacement: placing the entire match inside a `span` tag with a class name equal to the name of the rule. In this case: `<span class='keyword'>end</span>`.
   
 ### Write some CSS for the syntax
 
@@ -51,7 +51,7 @@ code .module {
 }
 ```
     
-And so on.
+And so on. Consult `tests/vibrant-ink.css` for a sample theme.
 
 ### Annotate your `code` elements with class names
 
