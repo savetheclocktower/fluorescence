@@ -1,18 +1,39 @@
+code b {
+  font-weight: normal;
+}
+
 code .comment {
   color: #767676;
 }
 
 code .string {
-	color: #6f0;
+  color: #6f0;
 }
 
-code .keywords, 
+code .string .escape {
+  color: #7CB893;
+}
+
+code .string .interpolation,
+code .symbol .interpolation {
+  background-color: #333;
+}
+
+code .keyword, 
 code .control {
-	color: #cc922b;
+  color: #f60;
 }
 
-code .number,
-code .constant {
+code .keyword.special {
+  color: #DDE93D;
+}
+
+code .number {
+  color: #BCA1B5;
+}
+
+code .constant,
+code .symbol {
   color: #7CB893;
 }
 
@@ -35,10 +56,6 @@ code .parameter {
   font-style: italic;
 }
 
-code .brackets {
-	color: #fff;
-}
-
 code .property {
   color: #f60;
 }
@@ -48,14 +65,59 @@ code .variable {
 }
 
 code .regexp {
-  color: #44b4cc;
+  color: #29A994;
+}
+
+code .regexp b {
+  font-weight: normal;
+}
+
+code .regexp .group {
+  background-color: #041210;
+}
+
+code .regexp .group .group {
+  background-color: #0c1a17;
+}
+
+code .regexp .group .group .group {
+  background-color: #14211e;
+}
+
+code .regexp .group .group .group .group {
+  background-color: #1b2724;
+}
+
+
+code .regexp .escape {
+  color: #7CB893;
 }
 
 code .shell-command {
-  background-color: #cc3;
-  color: #000;
+  color: #cc3;
+  background-color: #333;
 }
 
-code .tag {
+code .shell-command .interpolation {
+  background-color: #222;
+}
+
+code .element {
+  
+}
+
+code .element .tag,
+code .element .punctuation,
+code .element .attribute {
   color: #f60;
 }
+
+
+code .class-definition-signature {
+  text-decoration: underline;
+}
+
+code .superclass {
+  font-style: italic;
+}
+

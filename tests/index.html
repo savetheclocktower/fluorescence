@@ -1,9 +1,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
   <link rel="stylesheet" href="vibrant-ink.css" type="text/css" media="screen" />
 
@@ -11,6 +11,7 @@
   <script src="../fluorescence.js" type="text/javascript"></script>
   <script src="../languages/javascript.js" type="text/javascript"></script>
   <script src="../languages/html.js" type="text/javascript"></script>
+  <script src="../languages/ruby.js" type="text/javascript"></script>
   
   <style type="text/css" media="screen">
     body {
@@ -28,17 +29,21 @@
       color: #fff;
       font-family: 'Panic Sans', Monaco, 'Lucida Console', 'Andale Mono', monospace;
     }
+    
+    pre code {
+      line-height: 17px;
+    }
   </style>
   
   
-	<title>Fluorescence tests</title>
-	
+  <title>Fluorescence tests</title>
+  
 </head>
 
 <body>
 
 <pre><code class="javascript">var Try = {
-  these: function() {
+  these: function(one, two, three) {
     var returnValue;
 
     for (var i = 0, length = arguments.length; i < length; i++) {
@@ -55,8 +60,135 @@
 
 <pre><code class="html">&lt;img src="foo.gif" width="1000" height="4" alt="Lorem ipsum dolor." /&gt;
 &lt;ul&gt;
-  &lt;li&gt;Lorem ipsum dolor sit amet.&lt;/li&gt;
+  &lt;li&gt;Lorem ipsum dolor sit amet. width="1000" (that was a test)&lt;/li&gt;
+  
+  &lt;script&gt;var foo = 'bar';&lt;/script&gt;
+
+  &lt;script type="text/javascript"&gt;var foo = '\\bar';&lt;/script&gt;
+
+  &lt;SCRIPT type="text/javascript"&gt;var foo = '\\bar';&lt;/script&gt;
+  
+  &lt;script&gt;
+    for (var i = 0, length = arguments.length; i < length; i++) {
+      var lambda = arguments[i];
+      try {
+        returnValue = lambda();
+        break;
+      } catch (e) { }
+    }
+  &lt;/script&gt;
+  
 &lt;/ul&gt;</code></pre>
+
+<pre><code class="ruby">class Spot &lt; ActiveRecord::Base
+  def to_public_json(format=:full, options={:foo => "bar", :baz => :thud, :zort => 5_000}, nil_by_default=nil, false_by_default=false)
+    hash = {
+      :message    => self.message,
+      :created_at => self.created_at,
+      :spot       => self.spot.to_public_json(options[:spot_format] || :short),
+      :user       => self.user.to_public_json(options[:user_format] || :short)
+    }
+    
+    @what = ""
+
+    # Perhaps attach other properties, depending on which format we wanted
+    if format == :full
+      "\\lorem\" #{ipsum + 4 + foo}\" dolor\""
+      # et cetera
+    end
+    
+    if format =~ /\blorem\sipsum\sdolor/
+      `cat foo > bar #{bacon}`
+    end
+    
+    format =~ /\b(lorem(?:\sipsum(\sdolo(r)?)))/
+    
+    
+    foo.map { |id| "/spots/#{id}" }
+    
+    troz.map do |bar, baz|
+      zort &lt;&lt; baz
+    end
+    
+    hash
+  end
+  
+  def block_stuff
+    # Nested blocks.
+    foo.map { |id|
+      item.map { |wtf| "wtf#{id}"}
+      "foo#{id}"
+    }
+  end
+  
+  def string_stuff
+    # Should not be escaped/interpolated.
+    '\\lorem\" #{ipsum + 4 + foo}\" dolor\"'
+    
+    # Should be escaped/interpolated.
+    "\\lorem\" #{ipsum + 4 + foo}\" dolor\""
+  end
+  
+  def number_stuff
+    # Should be highlighted.
+    val  = 1_000_000
+    val  = 1_000_000.floor
+    val  = 2.43
+    troz = 0b1001010101
+    troz = 0b100_101_0101
+    
+    nope = 1000_00_ # Should not be highlighted at all.
+    nope = 1000.    # Period should not be highlighted.
+  end
+  
+  def symbol_stuff
+    weird_quoted_symbol = :'foobar'
+    weird_quoted_symbol = :"foobar"
+    
+    # Should not be interpolated/escaped.
+    wqs = :'foo\n#{bar}'
+    
+    # Should be interpolated/escaped.
+    wqs = :"foo\n#{bar}"
+  end
+  
+  def foo
+    "bar"
+  end
+  
+  @heredoc = &lt;&lt;-WTF
+  Lorem ipsum dolor sit amet, consectetur adipisicing elit,\n sed do eiusmod tempor, #{other_latin} magna aliqua.
+  WTF
+  
+end
+
+module Foo
+  attr_accessor :wtf
+  attr_reader :ftw
+  attr_writer :lmao
+  def self.bar(troz)
+    troz || 0
+  end
+  
+  protected
+  
+  def zort(where=nil)
+    Zort.new(where, :foo)
+  end
+end</code></pre>
+
+<pre><code class="ruby"># Make string suitable for display as HTML, preserve spaces. Set :no_newline_after_br => true
+# to cause “\n” to be substituted by “&lt;br&gt;” instead of “&lt;br&gt;\n”
+def htmlize(str, opts = {})
+  str = str.to_s.gsub("&amp;", "&amp;amp;").gsub("&lt;", "&amp;lt;")
+  str = str.gsub(/\t+/, '&lt;span style=&quot;white-space:pre;&quot;&gt;\0&lt;/span&gt;')
+  str = str.gsub(/(^ +)|( )( +)/) { "#$2#{'&amp;nbsp;' * ($1 || $3).length}" }
+  if opts[:no_newline_after_br].nil?
+    str.gsub("\n", "&lt;br&gt;\n")
+  else
+    str.gsub("\n", "&lt;br&gt;")
+  end
+end</code></pre>
 
 </body>
 </html>
