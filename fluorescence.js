@@ -31,14 +31,22 @@
 
 (function() {
   
+  function regexToString(re) {
+    var str = re.toString();
+    // Trim the regex of its slashes and any trailing flags.
+    str = str.replace(/^\//, '').replace(/\/[mgiy]*$/, '');
+    return str;
+  }
+  
   var DEFAULT_TEMPLATE = new Template(
     '<span class="#{className}">#{text}</span>');  
-  
+    
   // Private/inner class.
   var Language = Class.create({
     initialize: function(name, rules, options) {
-      this.name    = name;
-      this.rules   = this._makeRules(rules);
+      this.name = name;
+      this._makeRules(rules);
+      
       this.options = Object.extend(
         Object.clone(Language.DEFAULT_OPTIONS), 
         options || {}
@@ -46,15 +54,38 @@
       
       this.elements = [];
       this.pattern = new RegExp(this.rules.pluck('pattern').join('|'),
-       this.options.ignoreCase ? "gi" : "g");
+       this.options.ignoreCase ? "mgi" : "mg");
+      
+      this.storage = new Hash();
     },
     
     _makeRules: function(rules) {
-      var newRules = [];
+      // Keep track of how many capture groups we're creating. The rule
+      // constructors need to know this in case their patterns have any group
+      // backreferences. They'll need to convert (e.g.) \2 to \15.
+      var newRules = [], obj, rule, prevCaptureGroups = 0;
       for (var ruleName in rules) {
-        newRules.push(new Rule(ruleName, rules[ruleName]));
+        obj = rules[ruleName];
+        rule = new Rule(ruleName, obj, prevCaptureGroups);
+        newRules.push(rule);
+        prevCaptureGroups += rule.length;
       }
-      return newRules;
+      
+      this.rules = newRules;
+    },
+    
+    set: function(key, value) {
+      this.storage.set(key, value);
+      return value;
+    },
+    
+    get: function(key, defaultValue) {
+      var val = this.storage.get(key);
+      if (Object.isUndefined(val)) {
+        val = defaultValue;
+        this.storage.set(key, val);
+      }
+      return val;
     },
     
     addElement: function(element) {
@@ -73,28 +104,56 @@
       }
     },
     
-    parse: function(text) {
+    parse: function(text, context) {
+      // Reset the pattern.
+      // In Firefox, when `exec` gets called twice in succession on the same
+      // regexp with identical strings, it will try to start matching from
+      // the `lastIndex` the second time through, instead of from the
+      // beginning of the string.
+      this.pattern.lastIndex = 0;
+      
+      if (!context) context = this;
+      
       var matches = this.pattern.exec(text);
+      if (!matches) return text;
       var parsed = text.replace(this.pattern, function() {
-        var i = 0, j = 1, rule, replacements;
+        var i = 0, j = 1, rule, replacements, beforeCallbackResult, afterCallbackResult;
         var length = matches.length;
-        console.log(matches);
         while (rule = this.rules[i++]) {
           if (!arguments[j] || arguments[j] === "") {
             j += rule.length;
             continue;
           }
           
+          replacements = [rule.name];
+          for (var k = 1; k <= rule.length; k++)
+            replacements.push(arguments[j + k]);
+            
+          // We let the user _either_ modify the replacements in-place _or_
+          // return an entirely new array. So if the function returns
+          // `undefined`, don't re-assign the variable; the replacements were
+          // probably modified in-place.
+          if (rule.beforeCallback) {
+            beforeCallbackResult = rule.beforeCallback(replacements, context);
+            if (!Object.isUndefined(beforeCallbackResult))
+              replacements = beforeCallbackResult;
+          }
+          
+          var result;
           if (!rule.replacement) {
-            return DEFAULT_TEMPLATE.evaluate({
+            result = DEFAULT_TEMPLATE.evaluate({
              className: rule.name, text: arguments[0] });
           } else {
-            replacements = [rule.name];
-            for (var k = 1; k <= rule.length; k++)
-              replacements.push(arguments[j + k]);
-              
-            return rule.replacement.interpolate(replacements);
+            result = rule.replacement.interpolate(replacements);
           }
+          
+          if (rule.afterCallback) {
+            afterCallbackResult = rule.afterCallback(result, context);
+            if (!Object.isUndefined(afterCallbackResult))
+            result = afterCallbackResult;
+          }
+          
+          return result;
         }
       }.bind(this));
       
@@ -106,19 +165,19 @@
         return arguments[1] + this.parse(arguments[2]);
       });
       
-		  // Newline substitution (preserving indentation).
-		  parsed = parsed.replace(/\n(\s*)/g, function() {
-		    return "\n" + ("&nbsp;".times(arguments[1].length));
-		  });
-		  
-		  // Tab substitution.
-		  parsed = parsed.replace(/\t/g, "&nbsp;".times(Fluorescence.TAB_SIZE));
-		  
-		  // Empty lines.
-		  parsed = parsed.replace(/\n(<\/\w+>)?/g, "<br />$1");
-		  parsed = parsed.replace(/<br \/>[\n\r\s]*<br \/>/g, "<p><br /></p>");
-		  
-		  return parsed;
+      // Newline substitution (preserving indentation).
+      parsed = parsed.replace(/\n(\s*)/g, function() {
+        return "\n" + ("&nbsp;".times(arguments[1].length));
+      });
+      
+      // Tab substitution.
+      parsed = parsed.replace(/\t/g, "&nbsp;".times(Fluorescence.TAB_SIZE));
+      
+      // Empty lines.
+      parsed = parsed.replace(/\n(<\/\w+>)?/g, "<br />$1");
+      parsed = parsed.replace(/<br \/>[\n\r\s]*<br \/>/g, "<p><br /></p>");
+      
+      return parsed;
     }
   });
   
@@ -147,18 +206,49 @@
   
   // Private/inner class.
   var Rule = Class.create({
-    initialize: function(name, rule) {
+    initialize: function(name, rule, prevCaptureGroups) {
       this.name = name;
       Object.extend(this, rule);
       
       if (!Object.isString(rule.pattern)) {
-        this.pattern = rule.pattern.toString().substr(1, String(rule.pattern).length - 2);
+        this.pattern = regexToString(rule.pattern);
       } else {
         this.pattern = rule.pattern;
       }
       
-      this.length = (this.pattern.match(/(^|[^\\])\([^?]/g) || "").length + 1;
-      this.pattern = '(' + this.pattern + ')';      
+      // Alter backreferences so that they point to the right thing. Yes,
+      // this is ridiculous.
+      this.pattern = this.pattern.replace(/\\(\d+)/, function(m, d) {
+        var group = Number(d);
+        // Adjust for the number of groups that already exist, plus the
+        // surrounding set of parentheses.
+        return "\\" + ((prevCaptureGroups + 1) + group);
+      });
+      
+      // Man, I wish we had lookbehind.
+      //
+      // To figure out how many capturing groups a regex has, we count the
+      // raw open parentheses, then we subtract any patterns that can have
+      // open parentheses without actually starting groups.
+      //
+      // This is not bulletproof, but it's as close as I've gotten.
+      
+      // Count all open parentheses.
+      var parens       = (this.pattern.match(/\(/g)   || "").length;
+      // Subtract the ones that begin non-capturing groups.
+      var nonCapturing = (this.pattern.match(/\(\?/)  || "").length;
+      // Subtract the ones that are literal open-parens.
+      var escaped      = (this.pattern.match(/\\\(/g) || "").length;
+      // Add back the ones that match the pattern `\(?`, because they were
+      // counted twice instead of once.
+      var nonCapturingEscaped  = (this.pattern.match(/\\\(\?/g) || "").length;
+      
+      var exceptions = ((nonCapturing + escaped) - nonCapturingEscaped);
+      
+      // Add one because we're about to surround the whole thing in a
+      // capturing group.
+      this.length = (parens + 1) - exceptions;
+      this.pattern = '(' + this.pattern + ')';
     }
   });
   
@@ -184,6 +274,28 @@
       if (Language.size() === 1) {
         document.observe('dom:loaded', _setup);
       }
+    },
+    
+    getLanguage: function(name) {
+      var result = Language.detect(function(l) { return l.name === name; });
+      return result;
+    },
+    
+    // Utility. Given an "anonymous" grammar (an object that could be passed
+    // as the second argument of `addLanguage`), highlights the given text.
+    parse: function(text, grammar, context) {
+      var language;
+      if (Object.isString(grammar)) {
+        language = this.getLanguage(grammar);
+      } else {
+        language = new Language(null, grammar);
+      }
+      
+      // If we don't have a language here, the user probably asked for a
+      // named language that hasn't been added. Fail silently.
+      if (!language) return text;
+      
+      return language.parse(text, context);
     }
-  };  
+  };
 })();
