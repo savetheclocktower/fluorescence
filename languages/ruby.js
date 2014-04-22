@@ -37,7 +37,7 @@
       if (hasOnlyLeftBrace(rawPart)) {
         var endIndex = findEndOfHash(rawParts, i + 1);
         parameters.push(rejoinHash(rawParts, i, endIndex));
-        i += (endIndex - i);
+        i = endIndex;
       } else {
         parameters.push(rawPart);
       }
