@@ -64,7 +64,8 @@ end</code></pre>
     
 will get transformed into this:
 
-```html<pre><code class="ruby"><span class='keyword'>module</span> <span class='module'>Foo</span>
+```html
+<pre><code class="ruby"><span class='keyword'>module</span> <span class='module'>Foo</span>
 <span class='keyword'>end</span></code></pre>
 ```
     
@@ -157,63 +158,70 @@ The inline comments make this an intimidating code block, but here's all you nee
 
 There are a couple of methods that let you parse arbitrary text with an arbitrary grammar. Instead of giving a grammar a name, as with `Fluorescence.addLanguage`, you can pass any grammar-like object into `Fluorescence.parse`:
 
-    var ESCAPES_GRAMMAR = {
-      escape: {
-        pattern: (/\\./) // A backslash followed by any single character
-      }
-    };
-    
-    // String escapes make this ugly here, but we're turning:
-    //   "Lorem \"ipsum\" dolor"
-    // into:
-    //   "Lorem <span class='escape'>\"</span>ipsum<span class='escape'>\"</span> dolor"
-    console.log(Fluorescence.parse("\"Lorem \\"ipsum\\" dolor", ESCAPES));
-    //-> "Lorem <span class='escape'>\"</span>ipsum<span class='escape'>\"</span> dolor"
+```javascript
+var ESCAPES_GRAMMAR = {
+  escape: {
+    pattern: (/\\./) // A backslash followed by any single character
+  }
+};
+
+// String escapes make this ugly here, but we're turning:
+//   "Lorem \"ipsum\" dolor"
+// into:
+//   "Lorem <span class='escape'>\"</span>ipsum<span class='escape'>\"</span> dolor"
+console.log(Fluorescence.parse("\"Lorem \\"ipsum\\" dolor", ESCAPES));
+//-> "Lorem <span class='escape'>\"</span>ipsum<span class='escape'>\"</span> dolor"
+```
 
 In this example, we're taking a rule that _should not_ be applied globally (escape sequences) and applying it to arbitrary text. In practice, we can reference it from a main grammar:
 
-    Fluorescence.addLanguage('ruby', {
-      string: {
-        pattern: (/(")(.*?[^\\])(")/),
-        replacement: "<span class='#{0}'>#{1}#{2}#{3}</span>",
-        beforeCallback: function(r) {
-          // Group 2 is the stuff within the quotation marks; apply the
-          // escape rule from above.
-          r[2] = Fluorescence.parse(r[2], ESCAPES_GRAMMAR);
-          return r;
-        }
-      },
-      // ...  
-    });
+```javascript
+Fluorescence.addLanguage('ruby', {
+  string: {
+    pattern: (/(")(.*?[^\\])(")/),
+    replacement: "<span class='#{0}'>#{1}#{2}#{3}</span>",
+    beforeCallback: function(r) {
+      // Group 2 is the stuff within the quotation marks; apply the
+      // escape rule from above.
+      r[2] = Fluorescence.parse(r[2], ESCAPES_GRAMMAR);
+      return r;
+    }
+  },
+  // ...  
+});
+```
     
 With this technique, you can exert more fine-grained control over which rules apply in which contexts. See `languages/ruby.js` for an example; it defines several internal grammars, some which are added to the main grammar and some which are not.
 
 If you want to parse some text with a named language, pass the language's name as the second argument to `Fluorescence.parse`:
 
-    Fluorescence.addLanguage('html', {
-      // ...
-      js_embedded: {
-        pattern: (/(&lt;)(script)(\s+.*?)?(&gt;)(.*?)(&lt;\/script&gt;)/),
-        replacement: "<span class='element'>#{1}<span class='element-name'>#{2}</span>#{3}#{4}</span>#{4}<span class='element'>#{5}</span>",
-        
-        beforeCallback: function(r) {
-          // Group 3 is the attribute collection, if it exists.
-          r[2] = doMagicalParsingOfAttributes(r[5]);
-          // Group 5 is raw JavaScript; highlight it.
-          r[5] = Fluorescence.parse(r[5], 'javascript');
-          return r;
-        }
-      }
-    });
-
+```javascript
+Fluorescence.addLanguage('html', {
+  // ...
+  js_embedded: {
+    pattern: (/(&lt;)(script)(\s+.*?)?(&gt;)(.*?)(&lt;\/script&gt;)/),
+    replacement: "<span class='element'>#{1}<span class='element-name'>#{2}</span>#{3}#{4}</span>#{4}<span class='element'>#{5}</span>",
+    
+    beforeCallback: function(r) {
+      // Group 3 is the attribute collection, if it exists.
+      r[2] = doMagicalParsingOfAttributes(r[5]);
+      // Group 5 is raw JavaScript; highlight it.
+      r[5] = Fluorescence.parse(r[5], 'javascript');
+      return r;
+    }
+  }
+});
+```
 
 ## Further configuration
 
 Fluorescence performs some voodoo to get all this to work properly in IE — which has trouble when a `code` element is contained by a `pre` element (i.e., the _common, everyday case_). As part of this voodoo, it replaces tabs with spaces. The default tab size is `2`, because I consider that to be _correct_ and any other value to be _wrong and dangerous_. If you disagree, though, you can change this setting:
 
-    <script type="text/javascript">
-      Fluorescence.TAB_SIZE = 4;
-    </script>
+```html
+<script type="text/javascript">
+  Fluorescence.TAB_SIZE = 4;
+</script>
+```
 
 Keep in mind, though, that most browsers have other ideas about how wide a tab should be. Safari treats a tab as _eight spaces_. That's enough to make me want to kill someone. It doesn't end up affecting me, though, because I write HTML with "soft" tabs (literal spaces instead of tabs). If you don't do the same, I'd recommend you selectively convert tabs to spaces inside your code blocks before you publish your HTML.
 
