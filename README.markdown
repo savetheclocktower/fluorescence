@@ -169,7 +169,7 @@ var ESCAPES_GRAMMAR = {
 //   "Lorem \"ipsum\" dolor"
 // into:
 //   "Lorem <span class='escape'>\"</span>ipsum<span class='escape'>\"</span> dolor"
-console.log(Fluorescence.parse("\"Lorem \\"ipsum\\" dolor", ESCAPES));
+console.log(Fluorescence.parse("\"Lorem \\"ipsum\\" dolor", ESCAPES_GRAMMAR));
 //-> "Lorem <span class='escape'>\"</span>ipsum<span class='escape'>\"</span> dolor"
 ```
 
@@ -191,7 +191,7 @@ Fluorescence.addLanguage('ruby', {
 });
 ```
     
-With this technique, you can exert more fine-grained control over which rules apply in which contexts. See `languages/ruby.js` for an example; it defines several internal grammars, some which are added to the main grammar and some which are not.
+With this technique, you can exert more fine-grained control over which rules apply in which contexts. See `languages/ruby.js` for an example; it defines several internal grammars, some of which are added to the main grammar and some which are not.
 
 If you want to parse some text with a named language, pass the language's name as the second argument to `Fluorescence.parse`:
 
